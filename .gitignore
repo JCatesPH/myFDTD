@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+
+# Specific directories
+data*
+DATA*
+figs*
