@@ -10,7 +10,7 @@ double fi1[NZ], fi2[NZ], fi3[NZ];            // PML parameters (see Sullivan, Ch
 double Sx[NZ], Ix[NZ];
 double rho[NZ], Jx[NZ];                   // Carrier and current density arrays
 double Dx[NZ], Hy[NZ];           // Field arrays
-double Ex[NZ];                           // Actual field in z-direction   
+double Ex[NZ], Ex1[NZ];                           // Actual field in z-direction   
 double chi3;
 double Ew_re[NF][NZ], Ew_im[NF][NZ]; // Real and imaginary frequency domain output.
 double Fsrc_re[NF], Fsrc_im[NF];     // Real and imaginary frequency domain source.

@@ -9,25 +9,33 @@ CLIGHT = 299792458
 EPS0 = 8.85418782e-12
 CHARGE_E = 1.602176634e-19
 MASS_E = 9.10938356e-31
+ETA0 = 376.730313668
 
 #%%
-num_z = 8000
+num_z = 9000
 dz = 5.0e-9
 dom_z = num_z * dz
+num_out = 80
+d_out = 1000
+num_freq = 1200
+
+n0 = 1.9
+
+lamb0 = 1.9e-6
+omeg0 = 2 * np.pi * CLIGHT / lamb0 
+
 
 print('num_z = {}'.format(num_z))
 print('dz = {}'.format(dz))
 print('dom_z = {}'.format(dom_z))
 
-z1 = 10e-6
-z2 = 30e-6
+z1 = 15e-6
+z2 = 35e-6
 print('index of z1 = {}'.format(z1/dz))
 print('index of z2 = {}'.format(z2/dz))
 
 #%%
-num_out = 22 - 1 
-d_out = 1500
-num_t = num_out * d_out
+num_t = (num_out - 1) * d_out
 dt = dz / (2 * CLIGHT)
 dom_t = num_t * dt
 
@@ -37,14 +45,12 @@ print('dom_t = {}'.format(dom_t))
 print('dom_ct = {}'.format(CLIGHT * dom_t))
 
 #%%
-n0 = 1.5
 domT_needed = dom_z * n0 / CLIGHT
 numT_needed = domT_needed / dt
 print('needed dom_t = {}'.format(domT_needed))
 print('needed num_t = {}'.format(numT_needed))
 
 #%%
-num_freq = 1000
 max_omeg = 2 * np.pi / ((num_t - 1) *dt) * num_freq
 delta_om = 2 * np.pi / ((num_t - 1) *dt)
 
@@ -52,8 +58,6 @@ print('max_omeg = {:.3e}'.format(max_omeg))
 print('delta_omeg = {:.3e}'.format(delta_om))
 
 #%% Use the central frequency for further analysis
-lamb0 = 1.9e-6
-omeg0 = 2 * np.pi * CLIGHT / lamb0 
 maxHarm = int(max_omeg / omeg0)
 
 print('lamb0 = {}'.format(lamb0))
@@ -72,3 +76,7 @@ print("Approximate plasma skin depth: {:.2e}".format(CLIGHT/omegPlasma))
 print("Critial Power: {:.3e} GW".format(17*(omeg0/omegPlasma)**2))
 print("Frequecy (not angular) of central wavelength: {:.2e} Hz".format(omeg0/(2*np.pi)))
 
+#################################################################################
+
+
+# %%

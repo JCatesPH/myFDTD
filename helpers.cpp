@@ -4,8 +4,8 @@ using namespace std;
 
 /* Source function */
 double src(double t) {
-    return sqrt(2*I0/(C0*EPS0)) * (sqrt(1-R)*exp(-2*log(2)*pow((t-t0)/taup, 2.0)) * cos(omeg0*(t-t0)) 
-        + sqrt(R) * exp(-8*log(2)*pow((t-t0)/taup, 2.0)) * cos(2*omeg0*(t-t0) + phi) );
+    return sqrt(2*I0/(C0*EPS0)) * (sqrt(1.0-R)*exp(-2.0*log(2.0)*pow((t-t0)/taup, 2)) * cos(omeg0*(t-t0)) 
+        + sqrt(R) * exp(-8.0*log(2.0)*pow((t-t0)/taup, 2)) * cos(2.0*omeg0*(t-t0) + phi) );
 }
 
 
@@ -66,6 +66,7 @@ void initArrays(double dt) {
         Jx[i] = 0.0;
         Sx[i] = 0.0;
         Ix[i] = 0.0;
+        Ex1[i] = 0.0;
     }
 
     //freqfile.open("data/omeg.csv");
@@ -85,6 +86,7 @@ double nfdtdsteps(int N, double T, double dt) {
     double eSquared, eCubed;
     double gamma_Debye = (eps_static - eps_inf) * dt / tau_Debye;
     double kappa = eps_inf + gamma_Debye + sigma0 * dt / EPS0;
+    double eta_k = pow(ETA0/2, mpi_k);
     for (int n=1; n<=N; n++){
         T = T + dt;
         /* - Update flux density */
@@ -104,9 +106,9 @@ double nfdtdsteps(int N, double T, double dt) {
         for (int i=0; i < NZ-1; i++){
             if (i > idie1 && i < idie2) {
                 eSquared = pow(ETA0 * Ex[i], 2);
-                eCubed = eSquared * ETA0 * Ex[i];
+                eCubed = eSquared * Ex[i];
 
-                Ex[i] = (Dx[i] - Ix[i] - exp(-dt / tau_Debye) * Sx[i] + 2.0 * chi3 * eCubed / ETA0) / (kappa + 3.0 * chi3 * eSquared / ETA0); 
+                Ex[i] = (Dx[i] - Ix[i] - exp(-dt / tau_Debye) * Sx[i] + 2.0 * chi3 * eCubed) / (kappa + 3.0 * chi3 * eSquared); 
             }
             else {
                 Ex[i] = (Dx[i] - Ix[i] - exp(-dt / tau_Debye) * Sx[i]) / kappa; // original
@@ -147,7 +149,7 @@ double nfdtdsteps(int N, double T, double dt) {
         for (int i=0; i<NZ; i++){
             /* - Calculate carrier density - */
             if (i > idie1 && i < idie2) {
-                rho[i] = rho[i] + dt * mpi_sigmak * pow(Ex[i], 2*mpi_k) * (num_atoms - rho[i]);
+                rho[i] = rho[i] + dt * mpi_sigmak * eta_k * pow(Ex[i], 2*mpi_k) * (num_atoms - rho[i]);
             }
             else {
                 rho[i] = 0;
@@ -158,7 +160,10 @@ double nfdtdsteps(int N, double T, double dt) {
             }
 
             /* - Calculate Jx - */
-            Jx[i] = (1.0 - dt * nu_e) * Jx[i] +  dt * Q2OM * ETA0 * rho[i] * Ex[i];
+            Jx[i] = (1.0 - dt * nu_e) * Jx[i] +  dt * Q2OM * ETA0 * rho[i] * 0.5 * (Ex[i] + Ex1[i]);
+
+            /* - Update field of previous time step - */
+            Ex1[i] = Ex[i];
         }
 
     }
@@ -209,3 +214,5 @@ void writeSimParameters() {
 
     simParamFile.close();
 }
+
+

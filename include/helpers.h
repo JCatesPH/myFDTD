@@ -27,6 +27,7 @@ extern double Sx[NZ], Ix[NZ];
 extern double rho[NZ], Jx[NZ];
 extern double Dx[NZ], Hy[NZ];   // Field arrays
 extern double Ex[NZ];                           // Actual field in z-direction   
+extern double Ex1[NZ];                           // Field at last time step (FOR J CALC)
 extern double chi3;
 extern double Ew_re[NF][NZ], Ew_im[NF][NZ];     // Real and imaginary frequency domain output.
 extern double Fsrc_re[NF], Fsrc_im[NF]; // Real and imaginary frequency domain source.
