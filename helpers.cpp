@@ -8,6 +8,15 @@ double src(double t) {
         + sqrt(R) * exp(-8.0*log(2.0)*pow((t-t0)/taup, 2)) * cos(2.0*omeg0*(t-t0) + phi) );
 }
 
+double atomicDensityProfile(int index) {
+	double z0 = (idie1 + idie2) / 2.0 * DZ;
+    double gamma2 = pow(0.75e-6, 2);
+	double n_max = 2.0e26;
+
+    double z = index * DZ;
+	//return n_max * (gamma2 / (pow(z - z0, 2) + gamma2));
+    return n_max;
+}
 
 void pmldef() {
     double xn,xxn,xnum;
@@ -67,6 +76,9 @@ void initArrays(double dt) {
         Sx[i] = 0.0;
         Ix[i] = 0.0;
         Ex1[i] = 0.0;
+        sigx[i] = 0.0;
+        //chi[i] = pow(eps_relDB, 2) - 1.0;
+        chi[i] = 0.0;
     }
 
     //freqfile.open("data/omeg.csv");
@@ -144,9 +156,10 @@ double nfdtdsteps(int N, double T, double dt) {
             //Hy[i] = Hy[i] + 0.5 * (Ex[i] - Ex[i+1]);
         }
 
-        
+        double num_atoms;
         #pragma omp parallel for
         for (int i=0; i<NZ; i++){
+            num_atoms = atomicDensityProfile(i);
             /* - Calculate carrier density - */
             if (i > idie1 && i < idie2) {
                 rho[i] = rho[i] + dt * mpi_sigmak * eta_k * pow(Ex[i], 2*mpi_k) * (num_atoms - rho[i]);
@@ -166,6 +179,150 @@ double nfdtdsteps(int N, double T, double dt) {
             Ex1[i] = Ex[i];
         }
 
+    }
+
+    return T;
+}
+
+
+double nfdtdsteps_DebyeKerr(int N, double T, double dt) {
+    double eSquared;
+    double tau_Kerr = 1e-15;
+
+    for (int n=1; n<=N; n++){
+        T = T + dt;
+        /* - Update flux density */
+        #pragma omp parallel for
+        for (int i=1; i<NZ; i++){
+            Dx[i] = gi3[i] * Dx[i] + 0.5 * gi2[i] * (Hy[i-1] - Hy[i]);
+            //Dx[i] = gi3[i] * Dx[i] + 0.5 * gi2[i] * (Hy[i-1] - Hy[i]) - C0 * dt * Jx[i];
+            //Dx[i] = Dx[i] + 0.5 * (Hy[i-1] - Hy[i]);
+        }
+
+        /* - Source - */
+        Dx[isrc] = Dx[isrc] + src(T); // soft source
+        //Dx[isrc] = src(T); // hard source
+
+        for (int j = 0; j < 5; j++) {
+
+            /* - Update value of susceptibility - */
+            #pragma omp parallel for
+            for (int i=0; i<NZ; i++){
+                if (i > idie1 && i < idie2) {
+                    eSquared = pow(ETA0 * Ex[i], 2);
+                    //chi[i] = chi[i] + (dt / tau_Kerr) * (3.0 / 4.0 * chi3 * eSquared - chi[i]);
+                    chi[i] = (tau_Kerr / dt * chi[i] + 3.0 / 4.0 * chi3 * eSquared) / (1.0 + tau_Kerr / dt);
+                }
+            }
+
+            /* - Calculate Ez - */
+            #pragma omp parallel for
+            for (int i=0; i < NZ-1; i++){
+                Ex[i] = Dx[i] / (1.0 + chi[i]);  
+            }
+
+        }
+        
+        /* - Calculate Fourier transform - */
+        #pragma omp parallel for
+        for (int k=0; k < NF; k++) {
+            for (int i=1; i<NZ; i++){
+                Ew_re[k][i] += cos(omeg[k]*T) * Ex[i];
+                Ew_im[k][i] += sin(omeg[k]*T) * Ex[i];
+            }
+            if (T < 3*t0) {
+                Fsrc_re[k] += cos(omeg[k]*T) * Ex[isrc];
+                Fsrc_im[k] += sin(omeg[k]*T) * Ex[isrc];
+            }
+            if (T > 3.5*t0) {
+                eRefl_re[k] += cos(omeg[k]*T) * Ex[isrc];
+                eRefl_im[k] += sin(omeg[k]*T) * Ex[isrc];
+            }
+        }
+        
+        /* - Set Ez edges to 0, as part of the PML - */
+        Ex[0] = 0.0;
+        Ex[NZ-1] = 0.0;
+
+        /* - Calculate Hx - */
+        #pragma omp parallel for
+        for (int i=0; i<NZ; i++){
+            Hy[i] = fi3[i] * Hy[i] + 0.5 * fi2[i] * (Ex[i] - Ex[i+1]);
+            //Hy[i] = Hy[i] + 0.5 * (Ex[i] - Ex[i+1]);
+        }
+
+        
+    }
+
+    return T;
+}
+
+double nfdtdsteps_JCP(int N, double T, double dt) {
+    double eSquared;
+    double tau_Kerr = 1e-15;
+
+    for (int n=1; n<=N; n++){
+        T = T + dt;
+        /* - Update flux density */
+        #pragma omp parallel for
+        for (int i=1; i<NZ; i++){
+            Dx[i] = gi3[i] * Dx[i] + 0.5 * gi2[i] * (Hy[i-1] - Hy[i]);
+            //Dx[i] = gi3[i] * Dx[i] + 0.5 * gi2[i] * (Hy[i-1] - Hy[i]) - C0 * dt * Jx[i];
+            //Dx[i] = Dx[i] + 0.5 * (Hy[i-1] - Hy[i]);
+        }
+
+        /* - Source - */
+        Dx[isrc] = Dx[isrc] + src(T); // soft source
+        //Dx[isrc] = src(T); // hard source
+
+        for (int j = 0; j < 5; j++) {
+
+            /* - Update value of susceptibility - */
+            #pragma omp parallel for
+            for (int i=0; i<NZ; i++){
+                if (i > idie1 && i < idie2) {
+                    eSquared = pow(ETA0 * Ex[i], 2);
+                    chi[i] = chi[i] + (dt / tau_Kerr) * (3.0 / 4.0 * chi3 * eSquared - chi[i]);
+                }
+            }
+
+            /* - Calculate Ez - */
+            #pragma omp parallel for
+            for (int i=0; i < NZ-1; i++){
+                Ex[i] = Dx[i] / (1.0 + chi[i]);  
+            }
+
+        }
+        
+        /* - Calculate Fourier transform - */
+        #pragma omp parallel for
+        for (int k=0; k < NF; k++) {
+            for (int i=1; i<NZ; i++){
+                Ew_re[k][i] += cos(omeg[k]*T) * Ex[i];
+                Ew_im[k][i] += sin(omeg[k]*T) * Ex[i];
+            }
+            if (T < 3*t0) {
+                Fsrc_re[k] += cos(omeg[k]*T) * Ex[isrc];
+                Fsrc_im[k] += sin(omeg[k]*T) * Ex[isrc];
+            }
+            if (T > 3.5*t0) {
+                eRefl_re[k] += cos(omeg[k]*T) * Ex[isrc];
+                eRefl_im[k] += sin(omeg[k]*T) * Ex[isrc];
+            }
+        }
+        
+        /* - Set Ez edges to 0, as part of the PML - */
+        Ex[0] = 0.0;
+        Ex[NZ-1] = 0.0;
+
+        /* - Calculate Hx - */
+        #pragma omp parallel for
+        for (int i=0; i<NZ; i++){
+            Hy[i] = fi3[i] * Hy[i] + 0.5 * fi2[i] * (Ex[i] - Ex[i+1]);
+            //Hy[i] = Hy[i] + 0.5 * (Ex[i] - Ex[i+1]);
+        }
+
+        
     }
 
     return T;

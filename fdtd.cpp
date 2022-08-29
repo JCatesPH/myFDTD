@@ -11,6 +11,7 @@ double Sx[NZ], Ix[NZ];
 double rho[NZ], Jx[NZ];                   // Carrier and current density arrays
 double Dx[NZ], Hy[NZ];           // Field arrays
 double Ex[NZ], Ex1[NZ];                           // Actual field in z-direction   
+double chi[NZ], sigx[NZ];
 double chi3;
 double Ew_re[NF][NZ], Ew_im[NF][NZ]; // Real and imaginary frequency domain output.
 double Fsrc_re[NF], Fsrc_im[NF];     // Real and imaginary frequency domain source.
@@ -113,17 +114,19 @@ int main()
     printf("  n  |  nsteps(n)  |  T  \n");
     printf("-----------------------------\n");
 
-    ofstream eField_file, rho_file, reflRe_outfile, reflIm_outfile;
+    ofstream eField_file, rho_file, reflRe_outfile, reflIm_outfile, chi_file;
     char re_outname[50], im_outname[50];
     eField_file.open("data/Ex.csv");
     rho_file.open("data/rho.csv");
+    chi_file.open("data/chi.csv");
     /* sourceRe_outfile.open();
     sourceIm_outfile.close(); */
     
     for (n=0; n<NOUT; n++){
 
         printf("%3d  |  %5d  | %8.5e\n", n, nsteps[n], T);
-        T = nfdtdsteps(DOUT, T, dt);
+        //T = nfdtdsteps(DOUT, T, dt);
+        T = nfdtdsteps_DebyeKerr(DOUT, T, dt);
         
         for (i=0; i<NZ-1; i++){
             sprintf(valstr, "%12.9f, ", Ex[i]);
@@ -131,12 +134,18 @@ int main()
 
             sprintf(valstr, "%12.9e, ", rho[i]);
             rho_file << valstr;
+            
+            sprintf(valstr, "%12.9e, ", chi[i]);
+            chi_file << valstr;
         }
         sprintf(valstr, "%12.9f", Ex[NZ-1]);
         eField_file << valstr << endl;
 
         sprintf(valstr, "%12.9e", rho[i]);
         rho_file << valstr << endl;
+        
+        sprintf(valstr, "%12.9e", chi[i]);
+        chi_file << valstr << endl;
 
         /* -- Print the frequency information to files*/
         /* sprintf(re_outname, "data/Ew_re_%d.csv", n*DOUT);
@@ -166,6 +175,7 @@ int main()
     }
     eField_file.close();    
     rho_file.close();
+    chi_file.close();
     
     printf("=============================\n");
     /* --- End of main loop --- */

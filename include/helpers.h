@@ -27,6 +27,7 @@ extern double Sx[NZ], Ix[NZ];
 extern double rho[NZ], Jx[NZ];
 extern double Dx[NZ], Hy[NZ];   // Field arrays
 extern double Ex[NZ];                           // Actual field in z-direction   
+extern double chi[NZ], sigx[NZ];
 extern double Ex1[NZ];                           // Field at last time step (FOR J CALC)
 extern double chi3;
 extern double Ew_re[NF][NZ], Ew_im[NF][NZ];     // Real and imaginary frequency domain output.
@@ -41,6 +42,7 @@ void pmldef();      // Defines parameters for PML regions
 void savegrid();    // Save XY-grid for plotting later
 void initArrays(double dt);
 double nfdtdsteps(int N, double T, double dt);    // Save XY-grid for plotting later
+double nfdtdsteps_DebyeKerr(int N, double T, double dt); 
 void writeSimParameters();
 
 template<typename ... Args>

@@ -12,27 +12,30 @@ MASS_E = 9.10938356e-31
 ETA0 = 376.730313668
 
 #%%
-num_z = 9000
-dz = 5.0e-9
-dom_z = num_z * dz
-num_out = 80
-d_out = 1000
-num_freq = 1200
-
-n0 = 1.9
-
 lamb0 = 1.9e-6
 omeg0 = 2 * np.pi * CLIGHT / lamb0 
+n0 = 1.9
 
+dz = 10.0e-9
+z1 = 15e-6
+z2 = 35e-6
+zf = 50e-6
 
+pml_len = lamb0 / 2 / dz
+buff_len = lamb0 / dz
+num_z = zf / dz + 2 * (pml_len + buff_len)
+dom_z = num_z * dz
+num_out = 50
+d_out = 500
+num_freq = 600
+
+print('LZ >= {}'.format(pml_len))
+print('BZ >= {}'.format(buff_len))
 print('num_z = {}'.format(num_z))
 print('dz = {}'.format(dz))
 print('dom_z = {}'.format(dom_z))
-
-z1 = 15e-6
-z2 = 35e-6
-print('index of z1 = {}'.format(z1/dz))
-print('index of z2 = {}'.format(z2/dz))
+print('index of z1 = {} + LZ + BZ'.format(z1/dz))
+print('index of z2 = {} + LZ + BZ'.format(z2/dz))
 
 #%%
 num_t = (num_out - 1) * d_out

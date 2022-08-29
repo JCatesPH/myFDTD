@@ -178,3 +178,32 @@ ax1.axvline(z2*1e6, color='w', linestyle='--')
 
 fig1.colorbar(C)
 plt.savefig(FIGPATH + 'rho_contour.png')
+
+#%%
+print('Reading in chi array.')
+df = pd.read_csv(DATAPATH + "/chi.csv", header=None, delimiter=',')
+chi = df.values
+
+
+#%%
+fig1 = plt.figure(figsize=(7,6), dpi=200)
+ax1 = fig1.add_subplot(111)
+
+#C = ax1.contourf(Z, timearr, np.abs(Ez)**2)
+C = ax1.contourf(
+        Z*1e6, 
+        CLIGHT*timearr*1e6, 
+        np.log10(chi),
+        levels=50
+        )
+
+#ax1.ticklabel_format(axis="both", style="sci", scilimits=(0,0))
+ax1.set_xlabel(r'$z$ [$\mu$m]')
+ax1.set_ylabel(r'$ct$ [$\mu$m]')
+ax1.set_title(r'$\chi(z,t)$')
+
+ax1.axvline(z1*1e6, color='w', linestyle='--')
+ax1.axvline(z2*1e6, color='w', linestyle='--')
+
+fig1.colorbar(C)
+plt.savefig(FIGPATH + 'chi_contour.png')
